@@ -1,12 +1,12 @@
 # Pebblescape
 
-Docker based mini-Heroku for big servers.
+Docker based single host mini-Heroku.
 
 Small Heroku-like PaaS with application addons, client CLI and a web UI, but designed to run on a single host.
 
 ## Requirements
 
-Ubuntu 14.04 x64
+Ubuntu 14.04 x64. Best installed on a clean server.
 
 ## Installing
 
@@ -15,8 +15,6 @@ Ubuntu 14.04 x64
 ## Deploying an App
 
 ## Components
-
-* [sshcommand](https://github.com/pebblescape/sshcommand) - used to set up the git receiver
 
 ## License
 
