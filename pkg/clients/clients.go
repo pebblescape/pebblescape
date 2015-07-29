@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fsouza/go-dockerclient"
+	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/fsouza/go-dockerclient"
 )
 
 func NewDockerClient() (*docker.Client, error) {
