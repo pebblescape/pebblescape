@@ -6,9 +6,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/docopt/docopt-go"
+	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/flynn/go-docopt"
 	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/fsouza/go-dockerclient"
-	"github.com/pebblescape/pebblescape/pkg/clients"
 )
 
 type command struct {
@@ -41,16 +40,16 @@ func Run(name string, args []string) error {
 	}
 
 	switch f := cmd.f.(type) {
-	case func(map[string]interface{}, *docker.Client) error:
-		client, err := clients.NewDockerClient()
+	case func(*docopt.Args, *docker.Client) error:
+		client, err := docker.NewClientFromEnv()
 		if err != nil {
 			return err
 		}
 		return f(parsedArgs, client)
-	case func(map[string]interface{}):
+	case func(*docopt.Args):
 		f(parsedArgs)
 		return nil
-	case func(map[string]interface{}) error:
+	case func(*docopt.Args) error:
 		return f(parsedArgs)
 	case func() error:
 		return f()

@@ -2,57 +2,25 @@
 	"ImportPath": "github.com/pebblescape/pebblescape",
 	"GoVersion": "go1.4.2",
 	"Packages": [
-		"./host/cli"
+		"./..."
 	],
 	"Deps": [
 		{
-			"ImportPath": "github.com/Sirupsen/logrus",
-			"Comment": "v0.7.3",
-			"Rev": "55eb11d21d2a31a3cc93838241d04800f52e823d"
+			"ImportPath": "github.com/flynn/go-docopt",
+			"Comment": "0.6.1-rc2-26-gf6dd2eb",
+			"Rev": "f6dd2ebbb31e9721c860cf1faf5c944aa73e3844"
 		},
 		{
-			"ImportPath": "github.com/docker/docker/pkg/archive",
-			"Comment": "v1.4.1-2543-ga54fd32",
-			"Rev": "a54fd325e6bd0c5a1c298deef48399fe6e59aa33"
-		},
-		{
-			"ImportPath": "github.com/docker/docker/pkg/fileutils",
-			"Comment": "v1.4.1-2543-ga54fd32",
-			"Rev": "a54fd325e6bd0c5a1c298deef48399fe6e59aa33"
-		},
-		{
-			"ImportPath": "github.com/docker/docker/pkg/ioutils",
-			"Comment": "v1.4.1-2543-ga54fd32",
-			"Rev": "a54fd325e6bd0c5a1c298deef48399fe6e59aa33"
-		},
-		{
-			"ImportPath": "github.com/docker/docker/pkg/pools",
-			"Comment": "v1.4.1-2543-ga54fd32",
-			"Rev": "a54fd325e6bd0c5a1c298deef48399fe6e59aa33"
-		},
-		{
-			"ImportPath": "github.com/docker/docker/pkg/promise",
-			"Comment": "v1.4.1-2543-ga54fd32",
-			"Rev": "a54fd325e6bd0c5a1c298deef48399fe6e59aa33"
-		},
-		{
-			"ImportPath": "github.com/docker/docker/pkg/system",
-			"Comment": "v1.4.1-2543-ga54fd32",
-			"Rev": "a54fd325e6bd0c5a1c298deef48399fe6e59aa33"
-		},
-		{
-			"ImportPath": "github.com/docker/docker/vendor/src/code.google.com/p/go/src/pkg/archive/tar",
-			"Comment": "v1.4.1-2543-ga54fd32",
-			"Rev": "a54fd325e6bd0c5a1c298deef48399fe6e59aa33"
-		},
-		{
-			"ImportPath": "github.com/docopt/docopt-go",
-			"Comment": "0.6.1-5-g854c423",
-			"Rev": "854c423c810880e30b9fecdabb12d54f4a92f9bb"
+			"ImportPath": "github.com/flynn/go-shlex",
+			"Rev": "3f9db97f856818214da2e1057f8ad84803971cff"
 		},
 		{
 			"ImportPath": "github.com/fsouza/go-dockerclient",
-			"Rev": "17d39bcb22e8103ba6d1c0cb2530c6434cb870a3"
+			"Rev": "933433faa3e1c0bbc825b251143f8e77affbf797"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh",
+			"Rev": "7f27901cb9636a61b9b0b1bab2679b2a9a12eb38"
 		}
 	]
 }

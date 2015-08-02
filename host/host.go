@@ -2,13 +2,16 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 
-	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/docopt/docopt-go"
+	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/flynn/go-docopt"
 	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/fsouza/go-dockerclient"
 	"github.com/pebblescape/pebblescape/host/cli"
 	"github.com/pebblescape/pebblescape/host/config"
+	"github.com/pebblescape/pebblescape/host/gitreceived"
 	"github.com/pebblescape/pebblescape/pkg/shutdown"
 	"github.com/pebblescape/pebblescape/pkg/version"
 )
@@ -16,14 +19,18 @@ import (
 const configFile = "/etc/pebblescape/host.json"
 
 func init() {
-	log.SetFlags(log.Lshortfile | log.Lmicroseconds)
+	log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
 	cli.Register("daemon", runDaemon, `
 usage: pebbles-host daemon [options]
 options:
-  --external-ip=IP       external IP of host
-  --state=PATH           path to state file [default: /var/lib/pebblescape/host-state.bolt]
-  --log-dir=DIR          directory to store job logs [default: /var/log/pebblescape]
+  --external-ip=IP      external IP of host
+  --state=PATH          path to state file [default: /var/lib/pebblescape/host-state.bolt]
+  --log-dir=DIR         directory to store job logs [default: /var/log/pebblescape]
+  --git-port=PORT       port to listen for Git pushes on [default: 22]
+  --repo-path=PATH      path for Git repo caches [default: /tmp/repos]
+  --git-skip-auth=BOOL  disable Git client authentication [default: false]
+  --git-keys=PATH       pem file containing private keys (read from SSH_PRIVATE_KEYS env by default)
 	`)
 }
 
@@ -43,9 +50,9 @@ Commands:
 See 'pebbles-host help <command>' for more information on a specific command.
 `
 
-	args, _ := docopt.Parse(usage, nil, true, version.Version, true)
-	cmd := args["<command>"].(string)
-	cmdArgs := args["<args>"].([]string)
+	args, _ := docopt.Parse(usage, nil, true, version.String(), true)
+	cmd := args.String["<command>"]
+	cmdArgs := args.All["<args>"].([]string)
 
 	if cmd == "help" {
 		if len(cmdArgs) == 0 { // `pebbles-host help`
@@ -86,8 +93,38 @@ See 'pebbles-host help <command>' for more information on a specific command.
 	}
 }
 
-func runDaemon(args map[string]interface{}, client *docker.Client) error {
-	fmt.Printf("%v", args)
+func runDaemon(args *docopt.Args, client *docker.Client) error {
+	log.Println("Starting daemon")
+
+	var keys []byte
+
+	if keyEnv := os.Getenv("SSH_PRIVATE_KEYS"); keyEnv != "" {
+		keys = []byte(keyEnv)
+	} else {
+		pemBytes, err := ioutil.ReadFile(args.String["--git-keys"])
+		if err != nil {
+			log.Fatalln("Failed to load private keys")
+		}
+
+		keys = pemBytes
+	}
+
+	path, err := filepath.Abs(os.Args[0])
+	if err != nil {
+		log.Fatal(err)
+	}
+	receiver := path + " receive"
+
+	err = gitreceived.Serve(
+		args.String["--git-port"],
+		args.String["--repo-path"],
+		args.Bool["--git-skip-auth"],
+		keys,
+		receiver)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	<-make(chan struct{})
 	return nil
 }
