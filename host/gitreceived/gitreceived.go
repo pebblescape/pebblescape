@@ -54,7 +54,7 @@ func Serve(port string, repoPath string, noAuth bool, keys []byte, receiver stri
 	if err != nil {
 		return err
 	}
-	log.Println("Listening for Git connections")
+	log.Println("Listening for Git connections on port " + port)
 
 	for {
 		// SSH connections just house multiplexed connections

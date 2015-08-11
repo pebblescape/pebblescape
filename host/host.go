@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -94,16 +95,19 @@ See 'pebbles-host help <command>' for more information on a specific command.
 }
 
 func runDaemon(args *docopt.Args, client *docker.Client) error {
-	log.Println("Starting daemon")
+	stateFile := args.String["--state"]
+	gitKeyPath := args.String["--git-keys"]
+	gitPort := args.String["--git-port"]
+	gitRepos := args.String["--repo-path"]
+	gitSkipAuth := args.Bool["--git-skip-auth"]
 
 	var keys []byte
-
 	if keyEnv := os.Getenv("SSH_PRIVATE_KEYS"); keyEnv != "" {
 		keys = []byte(keyEnv)
 	} else {
-		pemBytes, err := ioutil.ReadFile(args.String["--git-keys"])
+		pemBytes, err := ioutil.ReadFile(gitKeyPath)
 		if err != nil {
-			log.Fatalln("Failed to load private keys")
+			return errors.New("Failed to load private keys")
 		}
 
 		keys = pemBytes
@@ -111,20 +115,26 @@ func runDaemon(args *docopt.Args, client *docker.Client) error {
 
 	path, err := filepath.Abs(os.Args[0])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	receiver := path + " receive"
 
-	err = gitreceived.Serve(
-		args.String["--git-port"],
-		args.String["--repo-path"],
-		args.Bool["--git-skip-auth"],
-		keys,
-		receiver)
+	state := NewState(stateFile)
+
+	backend, err := NewDockerBackend(state, client)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
-	<-make(chan struct{})
-	return nil
+	cnt := backend.Inspect("f1e47b3a3dd2a6d8059d98233e3cd85f16dbd9604887f6b284a47df0582fafb2")
+	log.Printf("%s", cnt.Config.Entrypoint)
+	log.Printf("%s", cnt.Config.Cmd)
+
+	log.Println("Starting git receiver")
+	err = gitreceived.Serve(gitPort, gitRepos, gitSkipAuth, keys, receiver)
+	if err != nil {
+		return err
+	}
+
+	return <-make(chan error)
 }
