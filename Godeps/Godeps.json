@@ -11,9 +11,9 @@
 			"Rev": "980670afcebfd86727505b3061d8667195234816"
 		},
 		{
-			"ImportPath": "github.com/flynn/go-docopt",
-			"Comment": "0.6.1-rc2-26-gf6dd2eb",
-			"Rev": "f6dd2ebbb31e9721c860cf1faf5c944aa73e3844"
+			"ImportPath": "github.com/codegangsta/cli",
+			"Comment": "1.2.0-139-g142e6cd",
+			"Rev": "142e6cd241a4dfbf7f07a018f1f8225180018da4"
 		},
 		{
 			"ImportPath": "github.com/flynn/go-shlex",
@@ -22,6 +22,11 @@
 		{
 			"ImportPath": "github.com/fsouza/go-dockerclient",
 			"Rev": "933433faa3e1c0bbc825b251143f8e77affbf797"
+		},
+		{
+			"ImportPath": "github.com/julienschmidt/httprouter",
+			"Comment": "v1.1-3-g6aacfd5",
+			"Rev": "6aacfd5ab513e34f7e64ea9627ab9670371b34e7"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ssh",

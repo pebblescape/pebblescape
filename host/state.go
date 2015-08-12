@@ -12,7 +12,8 @@ import (
 )
 
 type State struct {
-	jobs map[string]*host.Job
+	jobs  map[string]*host.Job
+	users map[string]*host.User
 
 	mtx           sync.RWMutex
 	stateFilePath string
@@ -25,9 +26,20 @@ func NewState(stateFilePath string) *State {
 	s := &State{
 		stateFilePath: stateFilePath,
 		jobs:          make(map[string]*host.Job),
+		users:         make(map[string]*host.User),
 	}
 	s.initializePersistence()
 	return s
+}
+
+func (s *State) GetUsers() map[string]host.User {
+	s.mtx.RLock()
+	defer s.mtx.RUnlock()
+	res := make(map[string]host.User, len(s.users))
+	for k, v := range s.users {
+		res[k] = *v
+	}
+	return res
 }
 
 func (s *State) initializePersistence() {
