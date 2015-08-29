@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/pebblescape/pebblescape",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.5",
 	"Packages": [
 		"./..."
 	],
@@ -27,6 +27,10 @@
 			"ImportPath": "github.com/julienschmidt/httprouter",
 			"Comment": "v1.1-3-g6aacfd5",
 			"Rev": "6aacfd5ab513e34f7e64ea9627ab9670371b34e7"
+		},
+		{
+			"ImportPath": "github.com/kardianos/osext",
+			"Rev": "6e7f843663477789fac7c02def0d0909e969b4e5"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ssh",

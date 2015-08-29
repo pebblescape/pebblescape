@@ -32,6 +32,10 @@ func NewState(stateFilePath string) *State {
 	return s
 }
 
+func (s *State) Restore(backend Backend) {
+	s.backend = backend
+}
+
 func (s *State) GetUsers() map[string]host.User {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()

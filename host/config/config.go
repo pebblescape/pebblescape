@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strconv"
 )
 
 func Open(file string) (*Config, error) {
@@ -25,12 +26,29 @@ func Parse(r io.Reader) (*Config, error) {
 }
 
 type Config struct {
-	Args []string          `json:"args,omitempty"`
+	Args map[string]string `json:"args,omitempty"`
 	Env  map[string]string `json:"env,omitempty"`
 }
 
 func New() *Config {
 	return &Config{Env: make(map[string]string)}
+}
+
+func (c *Config) ArgFetch(name string, def string) string {
+	val, ok := c.Args[name]
+	if ok == false {
+		val = def
+	}
+	return val
+}
+
+func (c *Config) ArgFetchI(name string, def int) int {
+	val := c.ArgFetch(name, "")
+	i, err := strconv.Atoi(val)
+	if err != nil {
+		i = def
+	}
+	return i
 }
 
 func (c *Config) WriteTo(name string) error {

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"log"
+	"strings"
 
 	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/codegangsta/cli"
 	"github.com/pebblescape/pebblescape/host/config"
@@ -10,23 +11,35 @@ import (
 func Init(c *cli.Context) {
 	cfg := config.New()
 
-	keys := []string{
+	argKeys := []string{
 		"external-ip",
 		"state",
 		"log-dir",
 		"git-port",
 		"repo-path",
+	}
+
+	cfg.Args = make(map[string]string)
+
+	for _, k := range argKeys {
+		if val := c.String(k); val != "" {
+			cfg.Args[k] = val
+		}
+	}
+
+	envKeys := []string{
 		"git-skip-auth",
 		"git-keys",
 	}
 
-	for _, k := range keys {
+	for _, k := range envKeys {
 		if val := c.String(k); val != "" {
-			cfg.Args = append(cfg.Args, k, val)
+			envkey := "pebbles_" + strings.Replace(k, "-", "_", -1)
+			cfg.Env[strings.ToUpper(envkey)] = val
 		}
 	}
 
-	err := cfg.WriteTo(c.String("file"))
+	err := cfg.WriteTo(config.ConfigFile)
 	if err != nil {
 		log.Fatal(err)
 	}
