@@ -302,8 +302,16 @@ func (w writeFlusher) Write(p []byte) (int, error) {
 }
 
 const PrereceiveHookTmpl = `#!/bin/bash
-set -eo pipefail; while read oldrev newrev refname; do
-[[ $refname = "refs/heads/master" ]] && git archive $newrev | {{RECEIVER}} "$RECEIVE_APP" "$newrev" | sed -$([[ $(uname) == "Darwin" ]] && echo l || echo u) "s/^/"$'\e[1G\e[K'"/"
+set -eo pipefail;
+git-archive-all() {
+	GIT_DIR="$(pwd)"
+	cd ..
+	git checkout --force --quiet $1
+	git submodule --quiet update --init --recursive
+	tar --create $([[ $(uname) == "Darwin" ]] && echo || echo --exclude-vcs) .
+}
+while read oldrev newrev refname; do
+	[[ $refname = "refs/heads/master" ]] && git-archive-all $newrev | {{RECEIVER}} "$RECEIVE_APP" "$newrev" | sed -$([[ $(uname) == "Darwin" ]] && echo l || echo u) "s/^/"$'\e[1G\e[K'"/"
 done
 `
 
@@ -332,7 +340,7 @@ func prepareRepo(repoRoot string, cacheKey string) (string, error) {
 }
 
 func initRepo(path string) error {
-	cmd := exec.Command("git", "init", "--bare")
+	cmd := exec.Command("git", "init")
 	cmd.Dir = path
 	if err := cmd.Run(); err != nil {
 		return err
@@ -343,5 +351,5 @@ func initRepo(path string) error {
 func writeRepoHook(path string) error {
 	receiver := paths.SelfPath() + " receive"
 	prereceiveHook = []byte(strings.Replace(PrereceiveHookTmpl, "{{RECEIVER}}", receiver, 1))
-	return ioutil.WriteFile(filepath.Join(path, "hooks", "pre-receive"), prereceiveHook, 0755)
+	return ioutil.WriteFile(filepath.Join(path, ".git", "hooks", "pre-receive"), prereceiveHook, 0755)
 }

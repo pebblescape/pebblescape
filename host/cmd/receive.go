@@ -14,7 +14,6 @@ func Receive(c *cli.Context) {
 
 	app := c.Args()[0]
 	// rev := c.Args()[1]
-	// user := os.Getenv("RECEIVE_USER")
 
 	client, err := docker.NewClientFromEnv()
 	if err != nil {
