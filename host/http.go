@@ -6,7 +6,9 @@ import (
 	"net/http"
 
 	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/julienschmidt/httprouter"
+	"github.com/pebblescape/pebblescape/host/gitreceive"
 	"github.com/pebblescape/pebblescape/pkg/httphelper"
+	"github.com/pebblescape/pebblescape/pkg/random"
 	"github.com/pebblescape/pebblescape/pkg/shutdown"
 )
 
@@ -23,7 +25,7 @@ func (h *httpAPI) RegisterRoutes(r *httprouter.Router) error {
 	return nil
 }
 
-func serveHTTP(s *State) error {
+func serveHTTP(s *State, gitRepos string) error {
 	listener, err := net.Listen("tcp", ":4592")
 	if err != nil {
 		return err
@@ -37,7 +39,23 @@ func serveHTTP(s *State) error {
 	}
 	httpAPI.RegisterRoutes(router)
 
-	go http.Serve(listener, router)
+	gitHandler := gitreceive.NewGitHandler(gitRepos)
+	for _, g := range gitreceive.GitServices {
+		router.Handler(g.Method, "/app/:app"+g.Suffix, gitHandler)
+	}
+
+	go http.Serve(listener, logInjector(router))
 
 	return nil
+}
+
+func logInjector(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		reqID := req.Header.Get("X-Request-ID")
+		if reqID == "" {
+			reqID = random.UUID()
+		}
+		log.Printf("%s %s %s\n", req.RemoteAddr, req.Method, req.URL)
+		handler.ServeHTTP(w, req)
+	})
 }

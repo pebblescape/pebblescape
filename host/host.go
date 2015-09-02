@@ -2,7 +2,6 @@ package main
 
 import (
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,8 +10,6 @@ import (
 	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/fsouza/go-dockerclient"
 	"github.com/pebblescape/pebblescape/host/cmd"
 	"github.com/pebblescape/pebblescape/host/config"
-	"github.com/pebblescape/pebblescape/host/gitreceived"
-	"github.com/pebblescape/pebblescape/pkg/paths"
 	"github.com/pebblescape/pebblescape/pkg/shutdown"
 	"github.com/pebblescape/pebblescape/pkg/version"
 )
@@ -43,25 +40,10 @@ func main() {
 		Value: conf.ArgFetch("state", "/var/lib/pebblescape/host-state.bolt"),
 		Usage: "path to state file",
 	}
-	gitPortFlag := cli.IntFlag{
-		Name:  "git-port",
-		Value: conf.ArgFetchI("git-port", 22),
-		Usage: "port to listen for Git pushes on",
-	}
 	repoFlag := cli.StringFlag{
 		Name:  "repo-path",
 		Value: conf.ArgFetch("repo-path", "/tmp/repos"),
 		Usage: "path for Git repo caches",
-	}
-	skipAuthFlag := cli.BoolFlag{
-		Name:   "git-skip-auth",
-		Usage:  "disable Git client authentication",
-		EnvVar: "PEBBLES_GIT_SKIP_AUTH",
-	}
-	keysFlag := cli.StringFlag{
-		Name:   "git-keys",
-		Usage:  "pem file containing private keys",
-		EnvVar: "PEBBLES_GIT_KEYS",
 	}
 
 	app.Commands = []cli.Command{
@@ -72,13 +54,11 @@ func main() {
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "log-dir",
+					Value: conf.ArgFetch("log-dir", ""),
 					Usage: "directory to store job logs",
 				},
 				stateFlag,
-				gitPortFlag,
 				repoFlag,
-				skipAuthFlag,
-				keysFlag,
 			},
 		},
 		{
@@ -96,11 +76,13 @@ func main() {
 					Usage: "external IP address of host, defaults to the first IPv4 address of eth0",
 				},
 				stateFlag,
-				gitPortFlag,
 				repoFlag,
-				skipAuthFlag,
-				keysFlag,
 			},
+		},
+		{
+			Name:   "receive",
+			Usage:  "receive git push",
+			Action: cmd.Receive,
 		},
 	}
 
@@ -110,10 +92,7 @@ func main() {
 func runDaemon(c *cli.Context) {
 	logDir := c.String("log-dir")
 	stateFile := c.String("state")
-	gitKeys := c.String("git-keys")
-	gitPort := c.String("git-port")
 	gitRepos := c.String("repo-path")
-	gitSkipAuth := c.Bool("git-skip-auth")
 
 	if logDir != "" {
 		logFile := filepath.Join(logDir, "host.log")
@@ -126,25 +105,13 @@ func runDaemon(c *cli.Context) {
 			log.Fatal(err)
 		}
 		defer hostlog.Close()
-		log.SetOutput(io.MultiWriter(hostlog, os.Stdout))
 		log.Printf("Logging to %s\n", logFile)
-	}
-
-	var keys []byte
-	if _, err := os.Stat(gitKeys); err == nil {
-		pemBytes, err := ioutil.ReadFile(gitKeys)
-		if err != nil {
-			log.Fatal("Failed to load private keys")
-		}
-
-		keys = pemBytes
-	} else {
-		keys = []byte(os.Getenv("SSH_PRIVATE_KEYS"))
+		log.SetOutput(io.MultiWriter(hostlog, os.Stdout))
 	}
 
 	state := NewState(stateFile)
 
-	if err := serveHTTP(state); err != nil {
+	if err := serveHTTP(state, gitRepos); err != nil {
 		log.Fatal(err)
 	}
 
@@ -159,12 +126,6 @@ func runDaemon(c *cli.Context) {
 	}
 
 	state.Restore(backend)
-
-	receiver := paths.SelfPath() + " receive"
-	err = gitreceived.Serve(gitPort, gitRepos, gitSkipAuth, keys, receiver)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	<-make(chan error)
 }

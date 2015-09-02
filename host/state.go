@@ -14,6 +14,7 @@ import (
 type State struct {
 	jobs  map[string]*host.Job
 	users map[string]*host.User
+	apps  map[string]*host.App
 
 	mtx           sync.RWMutex
 	stateFilePath string
@@ -27,6 +28,7 @@ func NewState(stateFilePath string) *State {
 		stateFilePath: stateFilePath,
 		jobs:          make(map[string]*host.Job),
 		users:         make(map[string]*host.User),
+		apps:          make(map[string]*host.App),
 	}
 	s.initializePersistence()
 	return s
@@ -34,6 +36,13 @@ func NewState(stateFilePath string) *State {
 
 func (s *State) Restore(backend Backend) {
 	s.backend = backend
+}
+
+func (s *State) GetApp(name string) host.App {
+	s.mtx.RLock()
+	defer s.mtx.RUnlock()
+	app := *s.apps[name]
+	return app
 }
 
 func (s *State) GetUsers() map[string]host.User {

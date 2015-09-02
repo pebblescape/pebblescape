@@ -15,7 +15,6 @@ func Init(c *cli.Context) {
 		"external-ip",
 		"state",
 		"log-dir",
-		"git-port",
 		"repo-path",
 	}
 
@@ -27,10 +26,7 @@ func Init(c *cli.Context) {
 		}
 	}
 
-	envKeys := []string{
-		"git-skip-auth",
-		"git-keys",
-	}
+	envKeys := []string{}
 
 	for _, k := range envKeys {
 		if val := c.String(k); val != "" {
