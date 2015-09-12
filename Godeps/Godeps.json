@@ -6,6 +6,11 @@
 	],
 	"Deps": [
 		{
+			"ImportPath": "github.com/ant0ine/go-json-rest/rest",
+			"Comment": "v3.2.0-11-g2af9d00",
+			"Rev": "2af9d0034afcd83101abb1945f2a65ddbd563719"
+		},
+		{
 			"ImportPath": "github.com/boltdb/bolt",
 			"Comment": "v1.0-113-g980670a",
 			"Rev": "980670afcebfd86727505b3061d8667195234816"
@@ -16,25 +21,30 @@
 			"Rev": "142e6cd241a4dfbf7f07a018f1f8225180018da4"
 		},
 		{
-			"ImportPath": "github.com/flynn/go-shlex",
-			"Rev": "3f9db97f856818214da2e1057f8ad84803971cff"
-		},
-		{
 			"ImportPath": "github.com/fsouza/go-dockerclient",
-			"Rev": "933433faa3e1c0bbc825b251143f8e77affbf797"
-		},
-		{
-			"ImportPath": "github.com/julienschmidt/httprouter",
-			"Comment": "v1.1-3-g6aacfd5",
-			"Rev": "6aacfd5ab513e34f7e64ea9627ab9670371b34e7"
+			"Rev": "134c9ac46b51ace9135c81efe9aa9895d346c1cf"
 		},
 		{
 			"ImportPath": "github.com/kardianos/osext",
 			"Rev": "6e7f843663477789fac7c02def0d0909e969b4e5"
 		},
 		{
-			"ImportPath": "golang.org/x/crypto/ssh",
-			"Rev": "7f27901cb9636a61b9b0b1bab2679b2a9a12eb38"
+			"ImportPath": "github.com/parnurzeal/gorequest",
+			"Comment": "v0.2.9",
+			"Rev": "1f4e8242ff000cfd0614a19da3b655be4e347f92"
+		},
+		{
+			"ImportPath": "github.com/stretchr/graceful",
+			"Comment": "v1.2.1",
+			"Rev": "ac9ebe4f1ee151ac1eeeaef32957085cba64d508"
+		},
+		{
+			"ImportPath": "golang.org/x/net/netutil",
+			"Rev": "db8e4de5b2d6653f66aea53094624468caad15d2"
+		},
+		{
+			"ImportPath": "golang.org/x/net/publicsuffix",
+			"Rev": "db8e4de5b2d6653f66aea53094624468caad15d2"
 		}
 	]
 }

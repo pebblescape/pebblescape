@@ -30,8 +30,8 @@ type gitHandler struct {
 }
 
 type gitService struct {
-	Method     string
-	Suffix     string
+	method     string
+	suffix     string
 	handleFunc func(gitEnv, string, string, http.ResponseWriter, *http.Request)
 	rpc        string
 }
@@ -57,13 +57,13 @@ func (h *gitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Look for a matching Git service
 	foundService := false
 	for _, g = range GitServices {
-		if r.Method == g.Method && strings.HasSuffix(r.URL.Path, g.Suffix) {
+		if r.Method == g.method && strings.HasSuffix(r.URL.Path, g.suffix) {
 			foundService = true
 			break
 		}
 	}
 
-	name := strings.TrimSuffix(strings.TrimPrefix(strings.TrimSuffix(r.URL.Path, g.Suffix), "/app/"), ".git")
+	name := strings.TrimPrefix(strings.TrimSuffix(r.URL.Path, g.suffix), "/git/")
 	if !foundService || !utils.AppNamePattern.MatchString(name) {
 		// The protocol spec in git/Documentation/technical/http-protocol.txt
 		// says we must return 403 if no matching service is found.
@@ -308,7 +308,7 @@ git-archive-all() {
 	cd ..
 	git checkout --force --quiet $1
 	git submodule --quiet update --init --recursive
-	tar --create $([[ $(uname) == "Darwin" ]] && echo || echo --exclude-vcs) .
+	tar --create $([[ $(uname) != "Darwin" ]] && --exclude-vcs) .
 }
 while read oldrev newrev refname; do
 	[[ $refname = "refs/heads/master" ]] && git-archive-all $newrev | {{RECEIVER}} "$RECEIVE_APP" "$newrev" | sed -$([[ $(uname) == "Darwin" ]] && echo l || echo u) "s/^/"$'\e[1G\e[K'"/"

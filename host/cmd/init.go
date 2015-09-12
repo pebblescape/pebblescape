@@ -8,11 +8,42 @@ import (
 	"github.com/pebblescape/pebblescape/host/config"
 )
 
+func init() {
+	conf, err := config.Open(config.ConfigFile)
+	if err != nil {
+		conf = config.New()
+	}
+
+	cmd := cli.Command{
+		Name:   "init",
+		Usage:  "initialize host options",
+		Action: Init,
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "log-dir",
+				Value: conf.ArgFetch("log-dir", "/var/log/pebblescape"),
+				Usage: "directory to store job logs",
+			},
+			cli.StringFlag{
+				Name:  "state",
+				Value: conf.ArgFetch("state", "/var/lib/pebblescape/host-state.bolt"),
+				Usage: "path to state file",
+			},
+			cli.StringFlag{
+				Name:  "repo-path",
+				Value: conf.ArgFetch("repo-path", "/tmp/repos"),
+				Usage: "path for Git repos",
+			},
+		},
+	}
+
+	RegisterCommand(cmd)
+}
+
 func Init(c *cli.Context) {
 	cfg := config.New()
 
 	argKeys := []string{
-		"external-ip",
 		"state",
 		"log-dir",
 		"repo-path",
