@@ -13,14 +13,14 @@ import (
 func init() {
 	cmd := cli.Command{
 		Name:   "receive",
-		Usage:  "receive git push",
-		Action: Receive,
+		Usage:  "Receive git push",
+		Action: receive,
 	}
 
 	RegisterCommand(cmd)
 }
 
-func Receive(c *cli.Context) {
+func receive(c *cli.Context) {
 	log.SetFlags(0)
 
 	app := c.Args()[0]

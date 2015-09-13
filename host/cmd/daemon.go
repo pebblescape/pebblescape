@@ -22,8 +22,8 @@ func init() {
 
 	cmd := cli.Command{
 		Name:   "daemon",
-		Usage:  "start host daemon",
-		Action: Daemon,
+		Usage:  "Start host daemon",
+		Action: daemon,
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "log-dir",
@@ -46,9 +46,12 @@ func init() {
 	RegisterCommand(cmd)
 }
 
-func Daemon(c *cli.Context) {
+func daemon(c *cli.Context) {
 	var logger *log.Logger
 
+	log.SetFlags(log.Ldate | log.Lmicroseconds)
+
+	port := c.GlobalString("port")
 	logDir := c.String("log-dir")
 	stateFile := c.String("state")
 	gitRepos := c.String("repo-path")
@@ -88,5 +91,5 @@ func Daemon(c *cli.Context) {
 		log.Fatal(err)
 	}
 
-	http.Serve(state, gitRepos, logger)
+	http.Serve(port, state, gitRepos, logger)
 }

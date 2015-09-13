@@ -16,8 +16,8 @@ func init() {
 
 	cmd := cli.Command{
 		Name:   "init",
-		Usage:  "initialize host options",
-		Action: Init,
+		Usage:  "Initialize host options",
+		Action: initCfg,
 		Flags: []cli.Flag{
 			cli.StringFlag{
 				Name:  "log-dir",
@@ -40,7 +40,7 @@ func init() {
 	RegisterCommand(cmd)
 }
 
-func Init(c *cli.Context) {
+func initCfg(c *cli.Context) {
 	cfg := config.New()
 
 	argKeys := []string{

@@ -22,7 +22,7 @@ var DefaultStack = []rest.Middleware{
 	&rest.RecoverMiddleware{},
 }
 
-func Serve(s *state.State, repopath string, logger *log.Logger) {
+func Serve(port string, s *state.State, repopath string, logger *log.Logger) {
 	DefaultStack = append(
 		[]rest.Middleware{
 			&rest.AccessLogApacheMiddleware{
@@ -38,11 +38,11 @@ func Serve(s *state.State, repopath string, logger *log.Logger) {
 	server := &graceful.Server{
 		Timeout: 10 * time.Second,
 		Server: &http.Server{
-			Addr: ":4592",
+			Addr: ":" + port,
 		},
 	}
 
-	log.Println("HTTP API listening on 4592")
+	log.Println("HTTP API listening on " + port)
 	log.Fatal(server.ListenAndServe())
 }
 

@@ -56,8 +56,10 @@ func (s *State) Restore(backend backend.Backend) error {
 			return err
 		}
 
-		testuser := &host.User{Name: "yoooo"}
+		testuser := &host.User{Name: "yoooo", Token: "bootoken"}
 		s.users[testuser.Name] = testuser
+		testuser2 := &host.User{Name: "abc", Token: "superlong token"}
+		s.users[testuser2.Name] = testuser2
 
 		return nil
 	}); err != nil && err != io.EOF {
@@ -117,6 +119,16 @@ func (s *State) GetUser(name string) *host.User {
 func (s *State) AddUser(user *host.User) error {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
+
+	existing := s.users[user.Name]
+	if existing != nil {
+		return fmt.Errorf("User already exists")
+	}
+
+	if err := user.Create(); err != nil {
+		return err
+	}
+
 	s.users[user.Name] = user
 	s.persistUser(user.Name)
 	return nil

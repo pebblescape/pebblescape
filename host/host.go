@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	log.SetFlags(log.Ldate | log.Lmicroseconds)
+	log.SetFlags(0)
 }
 
 func main() {
@@ -29,5 +29,17 @@ func main() {
 	app.Usage = "manage pebblescape host"
 	app.Version = version.String()
 	app.Commands = cmd.RegisteredCommands()
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "host, H",
+			Value: "localhost",
+			Usage: "Pebblescape host",
+		},
+		cli.StringFlag{
+			Name:  "port, p",
+			Value: "4592",
+			Usage: "Pebblescape port",
+		},
+	}
 	app.Run(os.Args)
 }
