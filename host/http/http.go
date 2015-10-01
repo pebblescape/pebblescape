@@ -2,13 +2,13 @@ package http
 
 import (
 	"log"
+	"net"
 	"net/http"
-	"time"
 
 	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/ant0ine/go-json-rest/rest"
-	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/stretchr/graceful"
 	"github.com/pebblescape/pebblescape/host/gitreceive"
-	"github.com/pebblescape/pebblescape/host/state"
+	"github.com/pebblescape/pebblescape/host/types"
+	"github.com/pebblescape/pebblescape/pkg/shutdown"
 )
 
 const (
@@ -22,7 +22,7 @@ var DefaultStack = []rest.Middleware{
 	&rest.RecoverMiddleware{},
 }
 
-func Serve(port string, s *state.State, repopath string, logger *log.Logger) {
+func Serve(port string, s host.State, repopath string, logger *log.Logger) {
 	DefaultStack = append(
 		[]rest.Middleware{
 			&rest.AccessLogApacheMiddleware{
@@ -35,18 +35,17 @@ func Serve(port string, s *state.State, repopath string, logger *log.Logger) {
 	setupHttp(s)
 
 	// Create server
-	server := &graceful.Server{
-		Timeout: 10 * time.Second,
-		Server: &http.Server{
-			Addr: ":" + port,
-		},
+	listener, err := net.Listen("tcp", ":"+port)
+	if err != nil {
+		log.Fatal(err)
 	}
+	shutdown.BeforeExit(func() { listener.Close() })
 
 	log.Println("HTTP API listening on " + port)
-	log.Fatal(server.ListenAndServe())
+	log.Fatal(http.Serve(listener, nil))
 }
 
-func setupHttp(s *state.State) {
+func setupHttp(s host.State) {
 	api := rest.NewApi()
 	handler := Api{s}
 
@@ -54,6 +53,8 @@ func setupHttp(s *state.State) {
 		rest.Get("/user", handler.ListUsers),
 		rest.Get("/user/#user", handler.GetUser),
 		rest.Post("/user", handler.AddUser),
+		rest.Get("/job", handler.ListJobs),
+		rest.Get("/job/#job", handler.GetJob),
 		rest.Get("/app", handler.ListApps),
 		rest.Get("/app/#app", handler.GetApp),
 	)
@@ -68,7 +69,7 @@ func setupHttp(s *state.State) {
 	http.Handle("/", api.MakeHandler())
 }
 
-func setupGit(s *state.State, repopath string) {
+func setupGit(s host.State, repopath string) {
 	api := rest.NewApi()
 	handler := gitreceive.NewGitHandler(repopath)
 

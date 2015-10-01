@@ -4,12 +4,11 @@ import (
 	"net/http"
 
 	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/ant0ine/go-json-rest/rest"
-	"github.com/pebblescape/pebblescape/host/state"
 	"github.com/pebblescape/pebblescape/host/types"
 )
 
 type Api struct {
-	state *state.State
+	state host.State
 }
 
 func (a *Api) ListApps(w rest.ResponseWriter, r *rest.Request) {
@@ -23,6 +22,19 @@ func (a *Api) GetApp(w rest.ResponseWriter, r *rest.Request) {
 		return
 	}
 	w.WriteJson(app)
+}
+
+func (a *Api) ListJobs(w rest.ResponseWriter, r *rest.Request) {
+	w.WriteJson(a.state.ListJobs())
+}
+
+func (a *Api) GetJob(w rest.ResponseWriter, r *rest.Request) {
+	job := a.state.GetJob(r.PathParams["job"])
+	if job == nil {
+		rest.NotFound(w, r)
+		return
+	}
+	w.WriteJson(job)
 }
 
 func (a *Api) ListUsers(w rest.ResponseWriter, r *rest.Request) {

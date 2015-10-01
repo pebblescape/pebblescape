@@ -12,6 +12,8 @@ import (
 	"github.com/pebblescape/pebblescape/host/config"
 	"github.com/pebblescape/pebblescape/host/http"
 	"github.com/pebblescape/pebblescape/host/state"
+	// "github.com/pebblescape/pebblescape/host/types"
+	"github.com/pebblescape/pebblescape/pkg/shutdown"
 )
 
 func init() {
@@ -75,21 +77,45 @@ func daemon(c *cli.Context) {
 		logger = log.New(os.Stderr, "", log.Flags())
 	}
 
+	state := state.NewState(stateFile)
+
 	client, err := docker.NewClientFromEnv()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	backend, err := backend.NewDockerBackend(client)
+	backend, err := backend.NewDockerBackend(client, state)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	state := state.NewState(stateFile)
-	err = state.Restore(backend)
+	shutdown.BeforeExit(func() {
+		if err := backend.Cleanup(); err != nil {
+			log.Fatal(err)
+		}
+	})
+
+	resurrect, err := state.Restore(backend)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	resurrect()
+
+	// job := &host.Job{
+	// 	Config: &docker.Config{
+	// 		Image: "ubuntu",
+	// 		Cmd: []string{
+	// 			"/bin/bash",
+	// 			"-c",
+	// 			"ping google.com",
+	// 		},
+	// 	},
+	// }
+	// err = state.RunJob(job)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	http.Serve(port, state, gitRepos, logger)
 }
