@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/pebblescape/pebblescape",
-	"GoVersion": "go1.5",
+	"GoVersion": "go1.5.1",
 	"Packages": [
 		"./..."
 	],
@@ -9,11 +9,6 @@
 			"ImportPath": "github.com/ant0ine/go-json-rest/rest",
 			"Comment": "v3.2.0-11-g2af9d00",
 			"Rev": "2af9d0034afcd83101abb1945f2a65ddbd563719"
-		},
-		{
-			"ImportPath": "github.com/boltdb/bolt",
-			"Comment": "v1.0-113-g980670a",
-			"Rev": "980670afcebfd86727505b3061d8667195234816"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
@@ -25,26 +20,13 @@
 			"Rev": "134c9ac46b51ace9135c81efe9aa9895d346c1cf"
 		},
 		{
+			"ImportPath": "github.com/fzzy/radix/redis",
+			"Comment": "v0.5.6-2-g3528e87",
+			"Rev": "3528e87a910c6730810cec1be187f989d7d9442a"
+		},
+		{
 			"ImportPath": "github.com/kardianos/osext",
 			"Rev": "6e7f843663477789fac7c02def0d0909e969b4e5"
-		},
-		{
-			"ImportPath": "github.com/parnurzeal/gorequest",
-			"Comment": "v0.2.9",
-			"Rev": "1f4e8242ff000cfd0614a19da3b655be4e347f92"
-		},
-		{
-			"ImportPath": "github.com/stretchr/graceful",
-			"Comment": "v1.2.1",
-			"Rev": "ac9ebe4f1ee151ac1eeeaef32957085cba64d508"
-		},
-		{
-			"ImportPath": "golang.org/x/net/netutil",
-			"Rev": "db8e4de5b2d6653f66aea53094624468caad15d2"
-		},
-		{
-			"ImportPath": "golang.org/x/net/publicsuffix",
-			"Rev": "db8e4de5b2d6653f66aea53094624468caad15d2"
 		}
 	]
 }

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -11,20 +12,19 @@ import (
 )
 
 func init() {
-	cmd := cli.Command{
+	RegisterCommand(cli.Command{
 		Name:   "receive",
 		Usage:  "Receive git push",
 		Action: receive,
-	}
-
-	RegisterCommand(cmd)
+	})
 }
 
 func receive(c *cli.Context) {
 	log.SetFlags(0)
 
 	app := c.Args()[0]
-	// rev := c.Args()[1]
+	rev := c.Args()[1]
+	cache := c.Args()[2]
 
 	client, err := docker.NewClientFromEnv()
 	if err != nil {
@@ -33,18 +33,21 @@ func receive(c *cli.Context) {
 
 	stat, _ := os.Stdin.Stat()
 	if (stat.Mode() & os.ModeCharDevice) == 0 {
-		cnt, err := buildApp(app, client)
+		cnt, err := buildApp(app, client, cache)
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("Built app %s into container %s\n", app, cnt.ID)
+		log.Printf("Built app %v rev %v into container %v\n", app, rev, cnt.ID)
 	} else {
 		log.Fatal("no app input received")
 	}
 }
 
-func buildApp(app string, client *docker.Client) (*docker.Container, error) {
-	cachePath := path.Join("/tmp/pebbles-cache", app)
+func buildApp(app string, client *docker.Client, cacheRoot string) (*docker.Container, error) {
+	cachePath := path.Join(cacheRoot, app)
+	if err := os.MkdirAll(cachePath, 0755); err != nil {
+		return nil, fmt.Errorf("Could not not mkdir for cache: %s", err)
+	}
 
 	cnt, err := client.CreateContainer(docker.CreateContainerOptions{
 		Config: &docker.Config{

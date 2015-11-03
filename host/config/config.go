@@ -5,7 +5,9 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strconv"
+	"path/filepath"
+
+	"github.com/pebblescape/pebblescape/pkg/random"
 )
 
 func Open(file string) (*Config, error) {
@@ -26,35 +28,75 @@ func Parse(r io.Reader) (*Config, error) {
 }
 
 type Config struct {
-	Args map[string]string `json:"args,omitempty"`
-	Env  map[string]string `json:"env,omitempty"`
+	HostKey string `json:"host_key,omitempty"`
+	Home    string `json:"home,omitempty"`
+	DbID    string `json:"db_id,omitempty"`
+	File    string `json:"-"`
 }
 
 func New() *Config {
-	return &Config{Env: make(map[string]string)}
+	return &Config{}
 }
 
-func (c *Config) ArgFetch(name string, def string) string {
-	val, ok := c.Args[name]
-	if ok == false {
-		val = def
-	}
-	return val
-}
+func Ensure(name, key, home string) (*Config, error) {
+	c := New()
 
-func (c *Config) ArgFetchI(name string, def int) int {
-	val := c.ArgFetch(name, "")
-	i, err := strconv.Atoi(val)
+	_, err := os.OpenFile(name, os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
-		i = def
+		return c, err
 	}
-	return i
+
+	home, err = filepath.Abs(home)
+
+	c.File = name
+	c.Home = home
+	c.HostKey = random.Hex(20)
+
+	if key != "" {
+		c.HostKey = key
+	}
+
+	if err := c.Write(); err != nil {
+		return c, err
+	}
+
+	return c, nil
 }
 
-func (c *Config) WriteTo(name string) error {
+func (c *Config) EnsurePaths() error {
+	if err := os.MkdirAll(filepath.Join(c.Home, "db"), 0770); !os.IsExist(err) {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Config) Write() error {
 	data, err := json.MarshalIndent(c, "", "\t")
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(name, append(data, '\n'), 0644)
+
+	file, err := ioutil.TempFile("", "pebblescape-conf")
+	if err != nil {
+		return err
+	}
+
+	file.Write(append(data, '\n'))
+	if err := file.Sync(); err != nil {
+		return err
+	}
+
+	file.Close()
+
+	if err := os.Rename(file.Name(), c.File); err != nil {
+		os.Remove(file.Name())
+		return err
+	}
+
+	return nil
+}
+
+func (c *Config) Cleanup() error {
+	return os.Remove(c.File)
 }

@@ -26,7 +26,8 @@ import (
 )
 
 type gitHandler struct {
-	repoRoot string
+	repoRoot  string
+	cachePath string
 }
 
 type gitService struct {
@@ -47,8 +48,8 @@ var GitServices = [...]gitService{
 	gitService{"POST", "/git-receive-pack", handlePostRPC, "git-receive-pack"},
 }
 
-func NewGitHandler(repoRoot string) *gitHandler {
-	return &gitHandler{repoRoot}
+func NewGitHandler(repoRoot, cachePath string) *gitHandler {
+	return &gitHandler{repoRoot, cachePath}
 }
 
 func (h *gitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -118,7 +119,7 @@ func (h *gitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	repoPath, err := prepareRepo(h.repoRoot, name)
+	repoPath, err := prepareRepo(h.repoRoot, name, h.cachePath)
 	if err != nil {
 
 		http.Error(w, err.Error(), 404)
@@ -311,14 +312,14 @@ git-archive-all() {
 	tar --create $([[ $(uname) != "Darwin" ]] && --exclude-vcs) .
 }
 while read oldrev newrev refname; do
-	[[ $refname = "refs/heads/master" ]] && git-archive-all $newrev | {{RECEIVER}} "$RECEIVE_APP" "$newrev" | sed -$([[ $(uname) == "Darwin" ]] && echo l || echo u) "s/^/"$'\e[1G\e[K'"/"
+	[[ $refname = "refs/heads/master" ]] && git-archive-all $newrev | {{RECEIVER}} "$RECEIVE_APP" "$newrev" "{{CACHEPATH}}" | sed -$([[ $(uname) == "Darwin" ]] && echo l || echo u) "s/^/"$'\e[1G\e[K'"/"
 done
 `
 
 var prereceiveHook []byte
 var cacheMtx sync.Mutex
 
-func prepareRepo(repoRoot string, cacheKey string) (string, error) {
+func prepareRepo(repoRoot, cacheKey, cachePath string) (string, error) {
 	cacheMtx.Lock()
 	defer cacheMtx.Unlock()
 
@@ -331,8 +332,12 @@ func prepareRepo(repoRoot string, cacheKey string) (string, error) {
 		}
 	}
 
-	err := writeRepoHook(repoPath)
+	cachePath, err := filepath.Abs(cachePath)
 	if err != nil {
+		return repoPath, err
+	}
+
+	if err := writeRepoHook(repoPath, cachePath); err != nil {
 		return repoPath, err
 	}
 
@@ -348,8 +353,10 @@ func initRepo(path string) error {
 	return nil
 }
 
-func writeRepoHook(path string) error {
+func writeRepoHook(path, cache string) error {
 	receiver := paths.SelfPath() + " receive"
-	prereceiveHook = []byte(strings.Replace(PrereceiveHookTmpl, "{{RECEIVER}}", receiver, 1))
+	hook := strings.Replace(PrereceiveHookTmpl, "{{RECEIVER}}", receiver, 1)
+	hook = strings.Replace(hook, "{{CACHEPATH}}", cache, 1)
+	prereceiveHook = []byte(hook)
 	return ioutil.WriteFile(filepath.Join(path, ".git", "hooks", "pre-receive"), prereceiveHook, 0755)
 }

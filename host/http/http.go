@@ -4,10 +4,12 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"path/filepath"
 
 	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/ant0ine/go-json-rest/rest"
+	hostApi "github.com/pebblescape/pebblescape/host/api"
+	"github.com/pebblescape/pebblescape/host/config"
 	"github.com/pebblescape/pebblescape/host/gitreceive"
-	"github.com/pebblescape/pebblescape/host/types"
 	"github.com/pebblescape/pebblescape/pkg/shutdown"
 )
 
@@ -22,7 +24,7 @@ var DefaultStack = []rest.Middleware{
 	&rest.RecoverMiddleware{},
 }
 
-func Serve(port string, s host.State, repopath string, logger *log.Logger) {
+func Serve(port string, hostApi *hostApi.Api, conf *config.Config, logger *log.Logger) error {
 	DefaultStack = append(
 		[]rest.Middleware{
 			&rest.AccessLogApacheMiddleware{
@@ -31,8 +33,12 @@ func Serve(port string, s host.State, repopath string, logger *log.Logger) {
 			},
 		}, DefaultStack...)
 
-	setupGit(s, repopath)
-	setupHttp(s)
+	auth := func(user string, password string) bool {
+		return password == conf.HostKey
+	}
+
+	setupGit(auth, conf)
+	setupHttp(auth, hostApi)
 
 	// Create server
 	listener, err := net.Listen("tcp", ":"+port)
@@ -42,41 +48,42 @@ func Serve(port string, s host.State, repopath string, logger *log.Logger) {
 	shutdown.BeforeExit(func() { listener.Close() })
 
 	log.Println("HTTP API listening on " + port)
-	log.Fatal(http.Serve(listener, nil))
+	return http.Serve(listener, nil)
 }
 
-func setupHttp(s host.State) {
+func setupHttp(auth func(string, string) bool, hostApi *hostApi.Api) {
 	api := rest.NewApi()
-	handler := Api{s}
+	handler := Handler{hostApi}
 
 	router, err := rest.MakeRouter(
-		rest.Get("/user", handler.ListUsers),
-		rest.Get("/user/#user", handler.GetUser),
-		rest.Post("/user", handler.AddUser),
 		rest.Get("/job", handler.ListJobs),
-		rest.Get("/job/#job", handler.GetJob),
-		rest.Get("/app", handler.ListApps),
-		rest.Get("/app/#app", handler.GetApp),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	api.Use(DefaultStack...)
+	api.Use(&rest.AuthBasicMiddleware{
+		Realm:         "Pebblescape",
+		Authenticator: auth,
+	})
 	api.Use(&rest.ContentTypeCheckerMiddleware{})
 	api.SetApp(router)
 
 	http.Handle("/", api.MakeHandler())
 }
 
-func setupGit(s host.State, repopath string) {
+func setupGit(auth func(string, string) bool, conf *config.Config) {
+	cachePath := filepath.Join(conf.Home, "cache")
+	repoPath := filepath.Join(conf.Home, "repos")
+
 	api := rest.NewApi()
-	handler := gitreceive.NewGitHandler(repopath)
+	handler := gitreceive.NewGitHandler(repoPath, cachePath)
 
 	api.Use(DefaultStack...)
 	api.Use(&rest.AuthBasicMiddleware{
 		Realm:         "Pebblescape GIT",
-		Authenticator: s.Authenticate,
+		Authenticator: auth,
 	})
 	api.SetApp(rest.AppSimple(func(w rest.ResponseWriter, r *rest.Request) {
 		handler.ServeHTTP(w.(http.ResponseWriter), r.Request)

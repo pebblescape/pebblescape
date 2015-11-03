@@ -1,8 +1,13 @@
 package cmd
 
 import (
+	"log"
+	"os"
+
 	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/codegangsta/cli"
-	"github.com/pebblescape/pebblescape/host/client"
+	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/fsouza/go-dockerclient"
+	"github.com/pebblescape/pebblescape/host/api"
+	"github.com/pebblescape/pebblescape/host/config"
 )
 
 var registeredCommands []cli.Command
@@ -15,7 +20,21 @@ func RegisteredCommands() []cli.Command {
 	return registeredCommands
 }
 
-func setClientPort(c *cli.Context) error {
-	client.SetHost("http://" + c.GlobalString("host") + ":" + string(c.GlobalString("port")))
-	return nil
+func getApi() *api.Api {
+	conf, err := config.Open(config.ConfigFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client, err := docker.NewClientFromEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	hostApi := api.New(client, conf, log.New(os.Stderr, "", log.Flags()))
+	if err := hostApi.ConnectDb(); err != nil {
+		log.Fatal(err)
+	}
+
+	return hostApi
 }
