@@ -11,6 +11,7 @@ import (
 )
 
 var registeredCommands []cli.Command
+var host *api.Api
 
 func RegisterCommand(cmd cli.Command) {
 	registeredCommands = append(registeredCommands, cmd)
@@ -20,7 +21,7 @@ func RegisteredCommands() []cli.Command {
 	return registeredCommands
 }
 
-func getApi() *api.Api {
+func setApi(c *cli.Context) error {
 	conf, err := config.Open(config.ConfigFile)
 	if err != nil {
 		log.Fatal("Host is not running or invalid config file")
@@ -28,13 +29,17 @@ func getApi() *api.Api {
 
 	client, err := docker.NewClientFromEnv()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	hostApi := api.New(client, conf, log.New(os.Stderr, "", log.Flags()))
-	if err := hostApi.ConnectDb(); err != nil {
-		log.Fatal(err)
+	host = api.New(client, conf, log.New(os.Stderr, "", log.Flags()))
+	if err := host.ConnectDb(); err != nil {
+		return err
 	}
 
-	return hostApi
+	return nil
+}
+
+func fatal(e interface{}) {
+	host.Logger.Fatal(e)
 }

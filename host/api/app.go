@@ -10,7 +10,10 @@ import (
 )
 
 var (
-	AppNotExist = errors.New("App does not exist")
+	AppNameError   = errors.New("App name contains invalid characters. Alphanumeric only, no whitespace.")
+	AppNotExist    = errors.New("App does not exist")
+	AppNameTooLong = errors.New("App name too long. Max characters 30.")
+	AppNameMax     = 30
 )
 
 type App struct {
@@ -26,7 +29,7 @@ type AppRepo struct {
 	DB  *sqlx.DB
 }
 
-func (a *Api) AppsRepo() *AppRepo {
+func (a *Api) GetAppRepo() *AppRepo {
 	return &AppRepo{a, a.DB}
 }
 
@@ -68,7 +71,11 @@ func (r *AppRepo) GetByName(name string) (*App, error) {
 
 func (r *AppRepo) Create(app *App) error {
 	if !utils.AppNamePattern.Match([]byte(app.Name)) {
-		return utils.AppNameError
+		return AppNameError
+	}
+
+	if len(app.Name) > AppNameMax {
+		return AppNameTooLong
 	}
 
 	if _, err := r.DB.NamedExec(`INSERT INTO apps (name) VALUES (:name)`, app); err != nil {

@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/codegangsta/cli"
+	"github.com/pebblescape/pebblescape/host/api"
 	"github.com/pebblescape/pebblescape/pkg/table"
 )
 
@@ -13,21 +13,23 @@ func init() {
 		Name:   "apps",
 		Usage:  "List apps",
 		Action: apps,
+		Before: setApi,
 	})
 
 	RegisterCommand(cli.Command{
 		Name:   "apps:create",
 		Usage:  "Create app",
 		Action: createApp,
+		Before: setApi,
 	})
 }
 
 func apps(c *cli.Context) {
-	repo := getApi().AppsRepo()
+	repo := host.GetAppRepo()
 
 	apps, err := repo.List()
 	if err != nil {
-		log.Fatal(err)
+		fatal(err)
 	}
 
 	tbl := table.New(2)
@@ -43,8 +45,21 @@ func apps(c *cli.Context) {
 func createApp(c *cli.Context) {
 	name := c.Args()[0]
 	if name == "" {
-		log.Fatal("Must specify name")
+		fatal("Must specify name")
 	}
 
-	// api := getApi()
+	app := &api.App{
+		Name: name,
+	}
+
+	repo := host.GetAppRepo()
+	if err := repo.Create(app); err != nil {
+		fatal(err)
+	}
+
+	tbl := table.New(2)
+	tbl.Add("ID:", app.ID)
+
+	fmt.Println("=== App " + app.Name)
+	fmt.Print(tbl.String())
 }
