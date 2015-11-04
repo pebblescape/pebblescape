@@ -64,10 +64,6 @@ func startDaemon(c *cli.Context) {
 		log.Fatal(err)
 	}
 
-	if err := conf.EnsurePaths(); err != nil {
-		log.Fatal(err)
-	}
-
 	client, err := docker.NewClientFromEnv()
 	if err != nil {
 		log.Fatal(err)

@@ -31,7 +31,7 @@ type Config struct {
 	HostKey string `json:"host_key,omitempty"`
 	Home    string `json:"home,omitempty"`
 	DbID    string `json:"db_id,omitempty"`
-	DbPass  string `json:"db_oass,omitempty"`
+	DbPass  string `json:"db_pass,omitempty"`
 	File    string `json:"-"`
 }
 
@@ -41,6 +41,10 @@ func New() *Config {
 
 func Ensure(name, key, home string) (*Config, error) {
 	c := New()
+
+	if err := c.EnsurePaths(); err != nil {
+		return c, err
+	}
 
 	_, err := os.OpenFile(name, os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
@@ -65,6 +69,10 @@ func Ensure(name, key, home string) (*Config, error) {
 }
 
 func (c *Config) EnsurePaths() error {
+	if err := os.MkdirAll(filepath.Dir(ConfigFile), 0770); !os.IsExist(err) {
+		return err
+	}
+
 	if err := os.MkdirAll(filepath.Join(c.Home, "db"), 0770); !os.IsExist(err) {
 		return err
 	}

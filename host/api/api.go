@@ -114,16 +114,10 @@ func (a *Api) StartDb(dev bool) error {
 		return err
 	}
 
+	// Wait for DB to initialize
+	time.Sleep(3 * time.Second)
 	if err := a.ConnectDb(); err != nil {
-		if err.Error() == EOF.Error() {
-			// Wait for DB to initialize
-			time.Sleep(3 * time.Second)
-			if err := a.ConnectDb(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
+		return err
 	}
 
 	return migrateDB(a.DB)
