@@ -2,20 +2,23 @@ package api
 
 import (
 	"errors"
-	"io/ioutil"
 	"log"
 	"path/filepath"
+	"time"
 
 	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/fsouza/go-dockerclient"
-	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/fzzy/radix/redis"
+	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/jmoiron/sqlx"
+	_ "github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/lib/pq"
 	"github.com/pebblescape/pebblescape/host/config"
 )
+
+var EOF = errors.New("EOF")
 
 type Api struct {
 	Client *docker.Client
 	Config *config.Config
 	Logger *log.Logger
-	DB     *redis.Client
+	DB     *sqlx.DB
 }
 
 func New(client *docker.Client, conf *config.Config, logger *log.Logger) *Api {
@@ -25,12 +28,12 @@ func New(client *docker.Client, conf *config.Config, logger *log.Logger) *Api {
 func (a *Api) StartDb(dev bool) error {
 	dbPath := filepath.Join(a.Config.Home, "db")
 
-	_, err := a.Client.InspectImage("redis")
+	_, err := a.Client.InspectImage("postgres")
 	if err != nil {
 		if err == docker.ErrNoSuchImage {
-			a.Logger.Println("Pulling redis image")
+			a.Logger.Println("Pulling DB image")
 			if err := a.Client.PullImage(docker.PullImageOptions{
-				Repository: "redis",
+				Repository: "postgres",
 				Tag:        "latest",
 			}, docker.AuthConfiguration{}); err != nil {
 				return err
@@ -57,36 +60,40 @@ func (a *Api) StartDb(dev bool) error {
 		}
 	}
 
+	a.Config.DbPass = "pebblescapeia"
+
 	opts := docker.CreateContainerOptions{
 		Config: &docker.Config{
-			Image: "redis",
+			Image: "postgres",
 			Volumes: map[string]struct{}{
-				"/data": {},
-			},
-			Cmd: []string{
-				"redis-server",
-				"--appendonly",
-				"yes",
+				"/var/lib/postgresql/data/pgdata": {},
 			},
 			Labels: map[string]string{
 				"com.pebblescape.db": "true",
 			},
+			Env: []string{
+				"POSTGRES_PASSWORD=" + a.Config.DbPass,
+				"PGDATA=/var/lib/postgresql/data/pgdata",
+			},
 		},
 		HostConfig: &docker.HostConfig{
 			Binds: []string{
-				dbPath + ":/data:rw",
+				dbPath + ":/var/lib/postgresql/data/pgdata:rw",
 			},
 		},
 	}
 
 	if dev {
 		opts.Config.ExposedPorts = map[docker.Port]struct{}{
-			"6379/tcp": {},
+			"5432/tcp": {},
 		}
 		opts.HostConfig.PortBindings = map[docker.Port][]docker.PortBinding{
-			"6379/tcp": []docker.PortBinding{docker.PortBinding{
+			"5432/tcp": []docker.PortBinding{docker.PortBinding{
 				HostPort: "4593",
 			}},
+		}
+		opts.HostConfig.Binds = []string{
+			"/tmp/pebblescapedb:/var/lib/postgresql/data/pgdata:rw",
 		}
 	} else {
 		opts.HostConfig.PublishAllPorts = true
@@ -107,10 +114,26 @@ func (a *Api) StartDb(dev bool) error {
 		return err
 	}
 
-	return a.ConnectDb()
+	if err := a.ConnectDb(); err != nil {
+		if err.Error() == EOF.Error() {
+			// Wait for DB to initialize
+			time.Sleep(3 * time.Second)
+			if err := a.ConnectDb(); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+
+	return migrateDB(a.DB)
 }
 
 func (a *Api) StopDb() error {
+	if a.DB != nil {
+		a.DB.Close()
+	}
+
 	a.Client.StopContainer(a.Config.DbID, 5)
 	a.Client.WaitContainer(a.Config.DbID)
 	a.Client.RemoveContainer(docker.RemoveContainerOptions{
@@ -127,48 +150,17 @@ func (a *Api) ConnectDb() error {
 		return err
 	}
 
-	port, ok := cnt.NetworkSettings.Ports["6379/tcp"]
+	port, ok := cnt.NetworkSettings.Ports["5432/tcp"]
 	if !ok {
 		return errors.New("DB port not exposed")
 	}
 
-	rds, err := redis.Dial("tcp", "localhost:"+port[0].HostPort)
+	db, err := sqlx.Connect("postgres", "port="+port[0].HostPort+" password="+a.Config.DbPass+" user=postgres dbname=postgres sslmode=disable")
 	if err != nil {
 		return err
 	}
 
-	test := "lucha!lucha!"
-	echo, err := rds.Cmd("ECHO", test).Str()
-	if err != nil {
-		return err
-	}
-
-	if echo != test {
-		return errors.New("DB echo does not match")
-	}
-
-	a.DB = rds
+	a.DB = db
 
 	return nil
-}
-
-func (a *Api) Apps() ([]*App, error) {
-	path := filepath.Join(a.Config.Home, "apps")
-	results := make([]*App, 0)
-
-	test := &App{"yo"}
-	PersistApp(filepath.Join(path, "yo.json"), test)
-
-	files, err := ioutil.ReadDir(path)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, f := range files {
-		app, _ := ParseApp(filepath.Join(path, f.Name()))
-
-		results = append(results, app)
-	}
-
-	return results, nil
 }

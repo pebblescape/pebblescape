@@ -1,39 +1,97 @@
 package api
 
 import (
-	"encoding/json"
-	"io/ioutil"
-	"os"
+	"database/sql"
+	"errors"
+	"time"
+
+	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/jmoiron/sqlx"
+	"github.com/pebblescape/pebblescape/pkg/utils"
+)
+
+var (
+	AppNotExist = errors.New("App does not exist")
 )
 
 type App struct {
-	Name string `json:"name,omitempty"`
+	ID        string     `db:"id"`
+	Name      string     `db:"name"`
+	CreatedAt *time.Time `db:"created_at"`
+	UpdatedAt *time.Time `db:"updated_at"`
+	DeletedAt *time.Time `db:"deleted_at"`
 }
 
-func ParseApp(path string) (*App, error) {
-	app := &App{}
+type AppRepo struct {
+	Api *Api
+	DB  *sqlx.DB
+}
 
-	file, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
+func (a *Api) AppsRepo() *AppRepo {
+	return &AppRepo{a, a.DB}
+}
+
+func (r *AppRepo) List() ([]App, error) {
+	apps := []App{}
+
+	if err := r.DB.Select(&apps, "SELECT * FROM apps ORDER BY name ASC"); err != nil {
+		return apps, err
 	}
 
-	if err := json.Unmarshal(file, app); err != nil {
-		return nil, err
+	return apps, nil
+}
+
+func (r *AppRepo) Get(id string) (*App, error) {
+	app := &App{}
+
+	if err := r.DB.Get(app, "SELECT * FROM apps WHERE id=$1", id); err != nil {
+		if err == sql.ErrNoRows {
+			return app, AppNotExist
+		}
+		return app, err
 	}
 
 	return app, nil
 }
 
-func PersistApp(path string, app *App) error {
-	bytes, err := json.Marshal(app)
+func (r *AppRepo) GetByName(name string) (*App, error) {
+	app := &App{}
+
+	if err := r.DB.Get(app, "SELECT * FROM apps WHERE name=$1", name); err != nil {
+		if err == sql.ErrNoRows {
+			return app, AppNotExist
+		}
+		return app, err
+	}
+
+	return app, nil
+}
+
+func (r *AppRepo) Create(app *App) error {
+	if !utils.AppNamePattern.Match([]byte(app.Name)) {
+		return utils.AppNameError
+	}
+
+	if _, err := r.DB.NamedExec(`INSERT INTO apps (name) VALUES (:name)`, app); err != nil {
+		return err
+	}
+
+	newApp, err := r.GetByName(app.Name)
 	if err != nil {
 		return err
 	}
 
-	if err := ioutil.WriteFile(path, bytes, os.ModeExclusive|0600); err != nil {
-		return err
-	}
+	app.ID = newApp.ID
+	app.CreatedAt = newApp.CreatedAt
+	app.UpdatedAt = newApp.UpdatedAt
 
 	return nil
+}
+
+func (r *AppRepo) Update(id string, data map[string]interface{}) (*App, error) {
+	app, err := r.Get(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return app, nil
 }

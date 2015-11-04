@@ -23,17 +23,17 @@ func init() {
 }
 
 func apps(c *cli.Context) {
-	api := getApi()
+	repo := getApi().AppsRepo()
 
-	apps, err := api.Apps()
+	apps, err := repo.List()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tbl := table.New(1)
+	tbl := table.New(2)
 
 	for _, app := range apps {
-		tbl.Add(app.Name)
+		tbl.Add(app.Name, app.ID)
 	}
 
 	fmt.Println("=== Apps")

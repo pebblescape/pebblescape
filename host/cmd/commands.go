@@ -23,7 +23,7 @@ func RegisteredCommands() []cli.Command {
 func getApi() *api.Api {
 	conf, err := config.Open(config.ConfigFile)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Host is not running or invalid config file")
 	}
 
 	client, err := docker.NewClientFromEnv()

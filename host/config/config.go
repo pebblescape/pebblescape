@@ -31,6 +31,7 @@ type Config struct {
 	HostKey string `json:"host_key,omitempty"`
 	Home    string `json:"home,omitempty"`
 	DbID    string `json:"db_id,omitempty"`
+	DbPass  string `json:"db_oass,omitempty"`
 	File    string `json:"-"`
 }
 
