@@ -8,24 +8,25 @@ import (
 
 	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/fsouza/go-dockerclient"
 	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/jmoiron/sqlx"
-	_ "github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/lib/pq"
+	_ "github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/lib/pq" // import postgres driver
 	"github.com/pebblescape/pebblescape/host/config"
 )
 
-var EOF = errors.New("EOF")
-
-type Api struct {
+// API is an interface that binds together all parts of the host infrastructure.
+type API struct {
 	Client *docker.Client
 	Config *config.Config
 	Logger *log.Logger
 	DB     *sqlx.DB
 }
 
-func New(client *docker.Client, conf *config.Config, logger *log.Logger) *Api {
-	return &Api{client, conf, logger, nil}
+// New creates and returns a new host API.
+func New(client *docker.Client, conf *config.Config, logger *log.Logger) *API {
+	return &API{client, conf, logger, nil}
 }
 
-func (a *Api) StartDb(dev bool) error {
+// StartDB boots up a host database instance.
+func (a *API) StartDB(dev bool) error {
 	dbPath := filepath.Join(a.Config.Home, "db")
 
 	_, err := a.Client.InspectImage("postgres")
@@ -46,7 +47,7 @@ func (a *Api) StartDb(dev bool) error {
 	results, err := a.Client.ListContainers(docker.ListContainersOptions{
 		All: true,
 		Filters: map[string][]string{
-			"label": []string{"com.pebblescape.db=true"},
+			"label": {"com.pebblescape.db=true"},
 		},
 	})
 	if err != nil {
@@ -55,7 +56,7 @@ func (a *Api) StartDb(dev bool) error {
 
 	for _, c := range results {
 		a.Config.DbID = c.ID
-		if err := a.StopDb(); err != nil {
+		if err := a.StopDB(); err != nil {
 			return err
 		}
 	}
@@ -88,7 +89,7 @@ func (a *Api) StartDb(dev bool) error {
 			"5432/tcp": {},
 		}
 		opts.HostConfig.PortBindings = map[docker.Port][]docker.PortBinding{
-			"5432/tcp": []docker.PortBinding{docker.PortBinding{
+			"5432/tcp": {{
 				HostPort: "4593",
 			}},
 		}
@@ -116,14 +117,15 @@ func (a *Api) StartDb(dev bool) error {
 
 	// Wait for DB to initialize
 	time.Sleep(3 * time.Second)
-	if err := a.ConnectDb(); err != nil {
+	if err := a.ConnectDB(); err != nil {
 		return err
 	}
 
 	return migrateDB(a.DB)
 }
 
-func (a *Api) StopDb() error {
+// StopDB cleanly shuts down running host database instance.
+func (a *API) StopDB() error {
 	if a.DB != nil {
 		a.DB.Close()
 	}
@@ -138,7 +140,8 @@ func (a *Api) StopDb() error {
 	return nil
 }
 
-func (a *Api) ConnectDb() error {
+// ConnectDB creates a new sqlx connection to running host database instance.
+func (a *API) ConnectDB() error {
 	cnt, err := a.Client.InspectContainer(a.Config.DbID)
 	if err != nil {
 		return err

@@ -1,3 +1,4 @@
+// Package table allows creating properly indented tables for CLIs.
 package table
 
 import (
@@ -5,24 +6,29 @@ import (
 	"strconv"
 )
 
+// Align specifies table cell alignment.
 type Align int
 
+// Table cell alignments
 const (
 	Left Align = iota
 	Right
 )
 
+// CellConf specifices table cell configuration.
 type CellConf struct {
 	Align    Align
 	PadRight []byte
 	PadLeft  []byte
 }
 
+// Table holds all the data needed to build a table.
 type Table struct {
 	CellConf []CellConf
 	Data     [][]string
 }
 
+// Add adds a row of cells to the table.
 func (t *Table) Add(cells ...string) *Table {
 	if len(cells) != len(t.CellConf) {
 		panic("expected " + strconv.Itoa(len(t.CellConf)) + " got " + strconv.Itoa(len(cells)))
@@ -31,6 +37,7 @@ func (t *Table) Add(cells ...string) *Table {
 	return t
 }
 
+// New creates a new table of specified columns.
 func New(size int) *Table {
 	conf := make([]CellConf, size)
 	dflt := CellConf{Left, []byte{' '}, []byte{}}
@@ -41,10 +48,12 @@ func New(size int) *Table {
 	return NewWithConf(conf)
 }
 
+// NewWithConf creates a new Table with specified cell configuration.
 func NewWithConf(conf []CellConf) *Table {
 	return &Table{conf, nil}
 }
 
+// String prints current table to string.
 func (t *Table) String() string {
 	if len(t.Data) == 0 {
 		return "\n"

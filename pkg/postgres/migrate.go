@@ -6,22 +6,27 @@ import (
 	"github.com/pebblescape/pebblescape/Godeps/_workspace/src/github.com/jmoiron/sqlx"
 )
 
+// Migration specifies the version and SQL of a single database migration.
 type Migration struct {
 	ID    int
 	Stmts []string
 }
 
+// NewMigrations returns a new list migrations.
 func NewMigrations() *Migrations {
 	l := make(Migrations, 0)
 	return &l
 }
 
+// Migrations is an array of migrations.
 type Migrations []Migration
 
+// Add appends a migration the list.
 func (m *Migrations) Add(id int, stmts ...string) {
 	*m = append(*m, Migration{ID: id, Stmts: stmts})
 }
 
+// Migrate executes all necessary migrations in the specified database.
 func (m Migrations) Migrate(db *sqlx.DB) error {
 	var initialized bool
 	for _, migration := range m {

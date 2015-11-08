@@ -5,10 +5,10 @@ import (
 	"github.com/pebblescape/pebblescape/host/api"
 )
 
-type Handler struct {
-	Api *api.Api
+type httpHandler struct {
+	API *api.API
 }
 
-func (h *Handler) ListJobs(w rest.ResponseWriter, r *rest.Request) {
+func (h *httpHandler) ListJobs(w rest.ResponseWriter, r *rest.Request) {
 	w.WriteJson(nil)
 }

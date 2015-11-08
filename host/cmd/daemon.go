@@ -69,11 +69,11 @@ func startDaemon(c *cli.Context) {
 		log.Fatal(err)
 	}
 
-	hostApi := api.New(client, conf, logger)
+	hostAPI := api.New(client, conf, logger)
 
 	shutdown.BeforeExit(func() {
 		log.Println("Cleaning up...")
-		if err := hostApi.StopDb(); err != nil {
+		if err := hostAPI.StopDB(); err != nil {
 			log.Printf("Error stopping host DB: %v", err)
 		}
 
@@ -88,12 +88,12 @@ func startDaemon(c *cli.Context) {
 		log.Printf("Starting host\n")
 	}
 
-	if err := hostApi.StartDb(dev); err != nil {
+	if err := hostAPI.StartDB(dev); err != nil {
 		log.Printf("Error starting host DB: %v", err)
 		return
 	}
 
-	if err := http.Serve(port, hostApi, conf, logger); err != nil {
+	if err := http.Serve(port, hostAPI, conf, logger); err != nil {
 		log.Printf("HTTP API error: %v", err)
 	}
 }

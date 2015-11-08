@@ -11,17 +11,19 @@ import (
 )
 
 var registeredCommands []cli.Command
-var host *api.Api
+var host *api.API
 
+// RegisterCommand register a new command to the list of possible commands.
 func RegisterCommand(cmd cli.Command) {
 	registeredCommands = append(registeredCommands, cmd)
 }
 
+// RegisteredCommands returns all currently registered commands.
 func RegisteredCommands() []cli.Command {
 	return registeredCommands
 }
 
-func setApi(c *cli.Context) error {
+func setAPI(c *cli.Context) error {
 	conf, err := config.Open(config.ConfigFile)
 	if err != nil {
 		log.Fatal("Host is not running or invalid config file")
@@ -33,7 +35,7 @@ func setApi(c *cli.Context) error {
 	}
 
 	host = api.New(client, conf, log.New(os.Stderr, "", log.Flags()))
-	if err := host.ConnectDb(); err != nil {
+	if err := host.ConnectDB(); err != nil {
 		return err
 	}
 

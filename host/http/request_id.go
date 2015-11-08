@@ -5,10 +5,11 @@ import (
 	"github.com/pebblescape/pebblescape/pkg/random"
 )
 
-type RequestIdMiddleware struct {
+type requestIDMiddleware struct {
 }
 
-func (mw *RequestIdMiddleware) MiddlewareFunc(h rest.HandlerFunc) rest.HandlerFunc {
+// MiddlewareFunc injects request ID header into every incoming request.
+func (mw *requestIDMiddleware) MiddlewareFunc(h rest.HandlerFunc) rest.HandlerFunc {
 	return func(w rest.ResponseWriter, r *rest.Request) {
 		uuid := random.UUID()
 

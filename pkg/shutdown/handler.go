@@ -1,3 +1,4 @@
+// Package shutdown allows specifying functions to run before application exits.
 package shutdown
 
 import (
@@ -26,30 +27,36 @@ func newHandler() *handler {
 	return h
 }
 
+// IsActive returns whether the exit handler is currently executing.
 func IsActive() bool {
 	return h.active.Load().(bool)
 }
 
+// BeforeExit specifies a function to run before exit.
 func BeforeExit(f func()) {
 	h.mtx.Lock()
 	h.stack = append(h.stack, f)
 	h.mtx.Unlock()
 }
 
+// Exit runs shutdown functions and exits.
 func Exit() {
 	h.exit(nil, 0, recover())
 }
 
+// ExitWithCode runs shutdown functions and exits with specified code.
 func ExitWithCode(code int) {
 	h.exit(nil, code, recover())
 }
 
+// Fatal is the equivalent of fmt.Fatal but runs shutdown functions first.
 func Fatal(v ...interface{}) {
 	h.exit(errors.New(fmt.Sprint(v...)), 1, recover())
 }
 
+// Fatalf is the equivalent of fmt.Fatalf but runs shutdown functions first.
 func Fatalf(format string, v ...interface{}) {
-	h.exit(errors.New(fmt.Sprintf(format, v...)), 1, recover())
+	h.exit(fmt.Errorf(format, v...), 1, recover())
 }
 
 func (h *handler) wait() {

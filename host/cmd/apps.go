@@ -13,14 +13,14 @@ func init() {
 		Name:   "apps",
 		Usage:  "List apps",
 		Action: apps,
-		Before: setApi,
+		Before: setAPI,
 	})
 
 	RegisterCommand(cli.Command{
 		Name:   "apps:create",
 		Usage:  "Create app",
 		Action: createApp,
-		Before: setApi,
+		Before: setAPI,
 	})
 }
 

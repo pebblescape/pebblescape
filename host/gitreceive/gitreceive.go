@@ -1,10 +1,5 @@
-/*
-gitreceive handles 'smart' Git HTTP requests for Flynn
-This HTTP server can service 'git clone', 'git push' etc. commands
-from Git clients that use the 'smart' Git HTTP protocol (git-upload-pack
-and git-receive-pack).
-Derived from https://gitlab.com/gitlab-org/gitlab-git-http-server
-*/
+// Package gitreceive handles 'smart' Git HTTP requests for Pebblescape in a net/http compatible way.
+// Derived from https://gitlab.com/gitlab-org/gitlab-git-http-server.
 package gitreceive
 
 import (
@@ -25,7 +20,8 @@ import (
 	"github.com/pebblescape/pebblescape/pkg/utils"
 )
 
-type gitHandler struct {
+// GitHandler holds the configuration for a Git HTTP handler.
+type GitHandler struct {
 	repoRoot  string
 	cachePath string
 }
@@ -41,18 +37,19 @@ type gitEnv struct {
 	App string
 }
 
-// Routing table
+// GitServices speficies all paths this handler processes.
 var GitServices = [...]gitService{
-	gitService{"GET", "/info/refs", handleGetInfoRefs, ""},
-	gitService{"POST", "/git-upload-pack", handlePostRPC, "git-upload-pack"},
-	gitService{"POST", "/git-receive-pack", handlePostRPC, "git-receive-pack"},
+	{"GET", "/info/refs", handleGetInfoRefs, ""},
+	{"POST", "/git-upload-pack", handlePostRPC, "git-upload-pack"},
+	{"POST", "/git-receive-pack", handlePostRPC, "git-receive-pack"},
 }
 
-func NewGitHandler(repoRoot, cachePath string) *gitHandler {
-	return &gitHandler{repoRoot, cachePath}
+// NewGitHandler returns a new net/http compatible handler.
+func NewGitHandler(repoRoot, cachePath string) *GitHandler {
+	return &GitHandler{repoRoot, cachePath}
 }
 
-func (h *gitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *GitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var g gitService
 
 	// Look for a matching Git service
@@ -302,6 +299,7 @@ func (w writeFlusher) Write(p []byte) (int, error) {
 	return w.wf.Write(p)
 }
 
+// PrereceiveHookTmpl is the template for the pre-receive hook that is created in the git repo on every push.
 const PrereceiveHookTmpl = `#!/bin/bash
 set -eo pipefail;
 git-archive-all() {

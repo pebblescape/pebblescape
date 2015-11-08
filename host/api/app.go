@@ -10,12 +10,13 @@ import (
 )
 
 var (
-	AppNameError   = errors.New("App name contains invalid characters. Alphanumeric only, no whitespace.")
-	AppNotExist    = errors.New("App does not exist")
-	AppNameTooLong = errors.New("App name too long. Max characters 30.")
-	AppNameMax     = 30
+	ErrAppNameInvalid = errors.New("App name contains invalid characters. Alphanumeric only, no whitespace.")
+	ErrAppNotExist    = errors.New("App does not exist")
+	ErrAppNameTooLong = errors.New("App name too long. Max characters 30.")
+	AppNameMax        = 30
 )
 
+// App represents the app in the database.
 type App struct {
 	ID        string     `db:"id"`
 	Name      string     `db:"name"`
@@ -24,15 +25,18 @@ type App struct {
 	DeletedAt *time.Time `db:"deleted_at"`
 }
 
+// AppRepo handles all interfacing between the host API and database.
 type AppRepo struct {
-	Api *Api
+	API *API
 	DB  *sqlx.DB
 }
 
-func (a *Api) GetAppRepo() *AppRepo {
+// GetAppRepo creates and returns a new AppRepo instance.
+func (a *API) GetAppRepo() *AppRepo {
 	return &AppRepo{a, a.DB}
 }
 
+// List returns all apps in the database.
 func (r *AppRepo) List() ([]App, error) {
 	apps := []App{}
 
@@ -43,12 +47,13 @@ func (r *AppRepo) List() ([]App, error) {
 	return apps, nil
 }
 
+// Get finds an app by ID and returns it.
 func (r *AppRepo) Get(id string) (*App, error) {
 	app := &App{}
 
 	if err := r.DB.Get(app, "SELECT * FROM apps WHERE id=$1", id); err != nil {
 		if err == sql.ErrNoRows {
-			return app, AppNotExist
+			return app, ErrAppNotExist
 		}
 		return app, err
 	}
@@ -56,12 +61,13 @@ func (r *AppRepo) Get(id string) (*App, error) {
 	return app, nil
 }
 
+// GetByName finds an app by name and returns it.
 func (r *AppRepo) GetByName(name string) (*App, error) {
 	app := &App{}
 
 	if err := r.DB.Get(app, "SELECT * FROM apps WHERE name=$1", name); err != nil {
 		if err == sql.ErrNoRows {
-			return app, AppNotExist
+			return app, ErrAppNotExist
 		}
 		return app, err
 	}
@@ -69,13 +75,14 @@ func (r *AppRepo) GetByName(name string) (*App, error) {
 	return app, nil
 }
 
+// Create saves a new app into the database.
 func (r *AppRepo) Create(app *App) error {
 	if !utils.AppNamePattern.Match([]byte(app.Name)) {
-		return AppNameError
+		return ErrAppNameInvalid
 	}
 
 	if len(app.Name) > AppNameMax {
-		return AppNameTooLong
+		return ErrAppNameTooLong
 	}
 
 	if _, err := r.DB.NamedExec(`INSERT INTO apps (name) VALUES (:name)`, app); err != nil {
@@ -94,6 +101,7 @@ func (r *AppRepo) Create(app *App) error {
 	return nil
 }
 
+// Update changes values of an existing app.
 func (r *AppRepo) Update(id string, data map[string]interface{}) (*App, error) {
 	app, err := r.Get(id)
 	if err != nil {
