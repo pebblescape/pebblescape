@@ -10,10 +10,17 @@ import (
 )
 
 var (
-	ErrAppNameInvalid = errors.New("App name contains invalid characters. Alphanumeric only, no whitespace.")
-	ErrAppNotExist    = errors.New("App does not exist")
+	// ErrAppNameInvalid is the error returned when when trying to set invalid app name.
+	ErrAppNameInvalid = errors.New("Name contains invalid characters. Alphanumeric only, no whitespace.")
+
+	// ErrAppNotExist is the error returned when requested app ID or name doesn't exist.
+	ErrAppNotExist = errors.New("App does not exist")
+
+	// ErrAppNameTooLong is the error returned when trying to set too long app name.
 	ErrAppNameTooLong = errors.New("App name too long. Max characters 30.")
-	AppNameMax        = 30
+
+	// AppNameMax is the maximum allowed length of an app name.
+	AppNameMax = 30
 )
 
 // App represents the app in the database.
