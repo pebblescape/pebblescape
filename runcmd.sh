@@ -1,3 +1,3 @@
 #!/bin/bash
 
-go run host/*.go $@
+go run host/*.go --config=./dev/host.json $@

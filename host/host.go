@@ -19,5 +19,12 @@ func main() {
 	app.Usage = "manage pebblescape host"
 	app.Version = version.String()
 	app.Commands = cmd.RegisteredCommands()
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "config",
+			Value: "/etc/pebblescape/host.json",
+			Usage: "host configuration path",
+		},
+	}
 	app.Run(os.Args)
 }

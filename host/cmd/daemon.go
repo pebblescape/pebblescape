@@ -31,6 +31,11 @@ func init() {
 				Usage: "directory to store daemon logs",
 			},
 			cli.StringFlag{
+				Name:  "config",
+				Value: "/etc/pebblescape/host.json",
+				Usage: "host configuration path",
+			},
+			cli.StringFlag{
 				Name:  "host-key",
 				Value: "",
 				Usage: "host authentication key",
@@ -51,11 +56,12 @@ func init() {
 func startDaemon(c *cli.Context) {
 	defer shutdown.Exit()
 
+	confPath := c.GlobalString("config")
 	port := c.String("port")
 	dev := c.Bool("dev")
 	logger := setupLogger(c.String("log-dir"))
 
-	conf, err := config.Ensure(config.ConfigFile, c.String("host-key"), c.String("home"))
+	conf, err := config.Ensure(confPath, c.String("host-key"), c.String("home"))
 	if err != nil {
 		if os.IsExist(err) {
 			log.Fatal("Host is already running")

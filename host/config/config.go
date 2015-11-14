@@ -11,9 +11,6 @@ import (
 	"github.com/pebblescape/pebblescape/pkg/random"
 )
 
-// ConfigFile specifies default config file location.
-const ConfigFile = "/var/run/pebblescape.json"
-
 // Open parses config file at specifided location.
 func Open(file string) (*Config, error) {
 	f, err := os.Open(file)
@@ -49,14 +46,14 @@ func New() *Config {
 }
 
 // Ensure opens and writes a config file in exclusive mode ensuring that only one host instance is running.
-func Ensure(name, key, home string) (*Config, error) {
+func Ensure(path, key, home string) (*Config, error) {
 	c := New()
 
-	if err := c.EnsurePaths(); err != nil {
+	if err := c.EnsurePaths(path); err != nil {
 		return c, err
 	}
 
-	_, err := os.OpenFile(name, os.O_CREATE|os.O_EXCL, 0600)
+	_, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
 		return c, err
 	}
@@ -64,7 +61,7 @@ func Ensure(name, key, home string) (*Config, error) {
 	home, err = filepath.Abs(home)
 
 	c.PID = string(os.Getpid())
-	c.File = name
+	c.File = path
 	c.Home = home
 	c.HostKey = random.Hex(20)
 
@@ -80,8 +77,8 @@ func Ensure(name, key, home string) (*Config, error) {
 }
 
 // EnsurePaths ensures that all paths necessary for proper host functioning exist.
-func (c *Config) EnsurePaths() error {
-	if err := os.MkdirAll(filepath.Dir(ConfigFile), 0770); !os.IsExist(err) {
+func (c *Config) EnsurePaths(path string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0770); !os.IsExist(err) {
 		return err
 	}
 

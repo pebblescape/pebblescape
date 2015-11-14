@@ -24,7 +24,7 @@ func RegisteredCommands() []cli.Command {
 }
 
 func setAPI(c *cli.Context) error {
-	conf, err := config.Open(config.ConfigFile)
+	conf, err := config.Open(c.GlobalString("config"))
 	if err != nil {
 		log.Fatal("Host is not running or invalid config file")
 	}
