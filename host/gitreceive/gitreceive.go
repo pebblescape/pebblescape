@@ -69,53 +69,6 @@ func (h *GitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // Ask the auth backend if the request is allowed, and what the
-	// // user ID (GL_ID) is.
-	// authResponse, err := h.doAuthRequest(r)
-	// if err != nil {
-	// 	fail500(w, "doAuthRequest", err)
-	// 	return
-	// }
-	// defer authResponse.Body.Close()
-
-	// if authResponse.StatusCode != 200 {
-	// 	// The Git request is not allowed by the backend. Maybe the
-	// 	// client needs to send HTTP Basic credentials.  Forward the
-	// 	// response from the auth backend to our client. This includes
-	// 	// the 'WWW-Authentication' header that acts as a hint that
-	// 	// Basic auth credentials are needed.
-	// 	for k, v := range authResponse.Header {
-	// 		w.Header()[k] = v
-	// 	}
-	// 	w.WriteHeader(authResponse.StatusCode)
-	// 	io.Copy(w, authResponse.Body)
-	// 	return
-	// }
-
-	// // The auth backend validated the client request and told us who
-	// // the user is according to them (GL_ID). We must extract this
-	// // information from the auth response body.
-	// dec := json.NewDecoder(authResponse.Body)
-	// if err := dec.Decode(&env); err != nil {
-	// 	fail500(w, "decode JSON GL_ID", err)
-	// 	return
-	// }
-	// // Don't hog a TCP connection in CLOSE_WAIT, we can already close it now
-	// authResponse.Body.Close()
-
-	// About path traversal: the Go net/http HTTP server, or
-	// rather ServeMux, makes the following promise: "ServeMux
-	// also takes care of sanitizing the URL request path, redirecting
-	// any request containing . or .. elements to an equivalent
-	// .- and ..-free URL.". In other words, we may assume that
-	// r.URL.Path does not contain '/../', so there is no possibility
-	// of path traversal here.
-	// repoPath := path.Join(h.repoRoot, strings.TrimSuffix(r.URL.Path, g.suffix))
-	// if !looksLikeRepo(repoPath) {
-	// 	http.Error(w, "Not Found", 404)
-	// 	return
-	// }
-
 	repoPath, err := prepareRepo(h.repoRoot, name, h.cachePath)
 	if err != nil {
 
@@ -125,20 +78,6 @@ func (h *GitHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	g.handleFunc(gitEnv{App: name}, g.rpc, repoPath, w, r)
 }
-
-// func (h *gitHandler) doAuthRequest(r *http.Request) (result *http.Response, err error) {
-// 	url := h.authBackend + r.URL.RequestURI()
-// 	authReq, err := http.NewRequest(r.Method, url, nil)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	// Forward all headers from our client to the auth backend. This includes
-// 	// HTTP Basic authentication credentials (the 'Authorization' header).
-// 	for k, v := range r.Header {
-// 		authReq.Header[k] = v
-// 	}
-// 	return h.httpClient.Do(authReq)
-// }
 
 func handleGetInfoRefs(env gitEnv, _ string, path string, w http.ResponseWriter, r *http.Request) {
 	rpc := r.URL.Query().Get("service")
@@ -179,7 +118,6 @@ func handleGetInfoRefs(env gitEnv, _ string, path string, w http.ResponseWriter,
 }
 
 func handlePostRPC(env gitEnv, rpc string, path string, w http.ResponseWriter, r *http.Request) {
-
 	// The client request body may have been gzipped.
 	body := r.Body
 	if r.Header.Get("Content-Encoding") == "gzip" {

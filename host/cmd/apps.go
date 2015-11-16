@@ -22,6 +22,13 @@ func init() {
 		Action: createApp,
 		Before: setAPI,
 	})
+
+	RegisterCommand(cli.Command{
+		Name:   "apps:delete",
+		Usage:  "Delete app",
+		Action: deleteApp,
+		Before: setAPI,
+	})
 }
 
 func apps(c *cli.Context) {
@@ -62,4 +69,18 @@ func createApp(c *cli.Context) {
 
 	fmt.Println("=== App " + app.Name)
 	fmt.Print(tbl.String())
+}
+
+func deleteApp(c *cli.Context) {
+	name := c.Args()[0]
+	if name == "" {
+		fatal("Must specify name")
+	}
+
+	repo := host.GetAppRepo()
+	if err := repo.Delete(name); err != nil {
+		fatal(err)
+	}
+
+	fmt.Printf("Deleted app %v\n", name)
 }

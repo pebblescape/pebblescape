@@ -117,3 +117,17 @@ func (r *AppRepo) Update(id string, data map[string]interface{}) (*App, error) {
 
 	return app, nil
 }
+
+// Delete deletes an app.
+func (r *AppRepo) Delete(name string) error {
+	app, err := r.GetByName(name)
+	if err != nil {
+		return err
+	}
+
+	if _, err := r.DB.NamedExec(`DELETE FROM apps WHERE id=(:id)`, app); err != nil {
+		return err
+	}
+
+	return nil
+}
